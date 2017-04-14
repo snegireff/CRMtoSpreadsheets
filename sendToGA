@@ -1,0 +1,109 @@
+/*
+* sendGAMP - базовая функция передаци данных
+* * @param {string} tid Tracking ID / Web Property ID
+* * @param {Object} options Объект параметров транзакции с полями, поименованными в соответствии с столбцами таблицы
+* !!! НА ПРОДЕ раскомментировать UrlFetchApp.fetch
+*/
+
+function sendGAMP(tid, options){
+    var data = {'v': '1',
+                'tid': tid,
+                'z': Math.floor(Math.random()*10E7),
+                'cid': options.clientId,
+                'cd1':options.clientId,
+                't':'event',
+                'ec':'Ecommerce',
+                'ea':'Transaction Upload',
+                'el': options.requestid,
+                'ni': '1',
+                'ti': options.requestid,
+                'pa': 'purchase',
+                'tr': options.revenue,
+                'pr1id':options.deponame,
+                'pr1nm':options.deponame,
+                'pr1br':options.bankname,
+                'pr1pr':options.revenue,
+                'pr1qt': '1',
+                'uip': options.IP,
+                'geoid': options['Criteria ID']
+
+               };
+    var payload = Object.keys(data).map(function(key) {
+      return encodeURIComponent(key) + '=' + encodeURIComponent(data[key]);
+    }).join('&');
+    var options = {'method' : 'POST',
+                   'payload' : payload };
+
+    // UrlFetchApp.fetch('http://www.google-analytics.com/collect', options); for PROD
+    Logger.log(UrlFetchApp.getRequest('http://www.google-analytics.com/collect', options));
+    return true;
+}
+
+/*
+* transactionsUpload - общая функция передаци данных
+* Внутри фунции фискируются константы и имена полей.
+*/
+
+function transactionsUpload() {
+  var tableFields = [ // имена столбцов таблицы, необходимых для передачи транзакции
+  'clientId',
+  'requestid',
+  'IP',
+  'Criteria ID',
+  'revenue',
+  'bankname',
+  'deponame',
+  'Transactions Status'
+   ];
+  var firstDataRowIndex = 3; // индекс первой строки данных
+
+  var tid = 'UA-107502-11'; //используется  DEV представление
+  var fieldsIndexes = {};
+  var rowIndexes = getColumnIndexes(SpreadsheetApp.getActiveSheet(), tableFields);
+  for (var i = 0; i < rowIndexes.length; i++) {
+    fieldsIndexes[tableFields[i]] = rowIndexes[i];
+  }
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var rows = sheet.getRange(firstDataRowIndex, 1, sheet.getLastRow() - firstDataRowIndex, sheet.getLastColumn()).getValues();
+
+  for (i = 0; i < rows.length ; i++) {
+  var rowData = getRowData(rows[i], fieldsIndexes);
+    Logger.log(rowData['Transactions Status']);
+  if (rowData['Transactions Status'] != 'pushed' && rowData['requestid'] != '' && rowData['revenue'] != '') {
+      var res = sendGAMP(tid, rowData);
+      sheet.getRange(firstDataRowIndex + i, 1 + fieldsIndexes['Transactions Status']).setValues([['pushed']]);
+    }
+  }
+}
+
+/*
+* getRowData - извлечение данных из строки,
+* * @param {Object} indexObject - объект вида {'название столбца':'номер столбца'}.
+*/
+
+function getRowData(row, indexObject) {
+  var res ={};
+  for (var i =0; i < Object.keys(indexObject).length; i++) {
+    res[Object.keys(indexObject)[i]] = row[indexObject[Object.keys(indexObject)[i]]]
+  }
+  return res;
+}
+
+/*
+* getColumnIndexes - нахождение номеров столбцов по массиву названий,
+* * @param {Array} mapping - массив названий столбцов.
+* * @param {sheet} sheet - лист для поиска.
+* * поиск производится в 1й строке.
+*/
+
+function getColumnIndexes(sheet, mapping) {
+  var titleRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var res = mapping.map(function(element) {
+    if (titleRow.indexOf(element) > -1) {
+      return titleRow.indexOf(element);
+    } else {
+      return element + ' not found';
+    }
+  });
+  return res;
+}
