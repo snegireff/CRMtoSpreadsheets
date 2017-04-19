@@ -1,0 +1,233 @@
+function runDemo() {
+  
+  try {
+    
+    Logger.log('start');
+
+//    var firstProfile = getFirstProfile();
+//    var results = getReportDataForProfile();
+    getReportDataForProfile7days();
+    
+//    getBatch();
+
+
+  } catch(error) {
+        Logger.log(error.message);
+
+//    Browser.msgBox(error.message);
+  }
+}
+
+
+
+function getReportDataForProfile() {
+
+  var tableId = 'ga:' + '32000361';
+  
+//  var sheet = SpreadsheetApp.getActiveSheet();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+  var sheetOut = SpreadsheetApp.getActiveSpreadsheet().getSheets()[1];
+  var startRow = 12716;  // First row of data to process
+  var trueRange = sheet.getRange(startRow,1,400,40);
+  var data = trueRange.getValues();
+
+  for (var i = 1; i < data.length; ++i) {
+    var row = data[i];
+    var year = row[7].match(/(.*)\.(.*)\.(.*)/)[3];
+    var month = row[7].match(/(.*)\.(.*)\.(.*)/)[2];  //дата выхода
+    var day = row[7].match(/(.*)\.(.*)\.(.*)/)[1];
+
+    var dateAd = year + '-' + ('0' + month).slice(-2) + '-' + ('0' + day).slice(-2);
+    Logger.log(dateAd);
+    var timeAd = new Date(row[9]);  //время выхода
+    var hourAd = ('0' + row[9].match(/(.*):(.*):(.*)/)[1]).slice(-2);
+    if (hourAd == '24') hourAd = '00';
+    if (hourAd == '25') hourAd = '01';
+    if (hourAd == '26') hourAd = '02';
+    
+    
+    var minuteAd = ('0' + row[9].match(/(.*):(.*):(.*)/)[2]).slice(-2);
+    
+//    var hourAd = ('0' + timeAd.getHours()).slice(-2);
+//    var minuteAd = ('0' + timeAd.getMinutes()).slice(-2);
+    
+    var durationAd = row[12];  //продолжительность выхода
+    var EqGRP = row[32];  //EqGRP
+    var count = 0;
+    
+//    var nameProduct = encodeURIComponent(row[7]);
+//    Logger.log('date: ' + dateAd + ' hourAd-minuteAd: ' + hourAd + ' ' +  minuteAd + ' EqGRP: ' + row[20]);
+ 
+  
+  var startDate = dateAd;   // 2 days (a fortnight) ago.
+  var endDate = dateAd;      // Today
+    
+    
+  var minutes = ';ga:minute=='+minuteAd;  
+  
+  for (var iii = 1; iii < 10; ++iii) {
+   
+   var temp = parseInt(minuteAd)+iii;
+   minutes+=',ga:minute=='+temp;
+  }
+  
+    
+  var optArgs = {
+    'dimensions': 'ga:source',              // Comma separated list of dimensions.
+    'sort': '-ga:sessions,ga:source',       // Sort by sessions descending, then keyword.
+    'filters': 'ga:medium==cpc;ga:hour==' + hourAd + minutes,          // Display only google traffic.
+    'start-index': '1',
+    'max-results':'1000'
+  };
+    
+//  Logger.log(results);
+
+    
+
+  // Make a request to the API.
+  var results = Analytics.Data.Ga.get(
+      tableId,                    // Table id (format ga:xxxxxx).
+      startDate,                  // Start-date (format yyyy-MM-dd).
+      endDate,                    // End-date (format yyyy-MM-dd).
+      'ga:sessions', // Comma seperated list of metrics.
+      optArgs);
+
+ // Logger.log(results);  
+    
+  if (results.getRows()) {
+    for (var ii = 0; ii < results.getRows().length; ii++) {
+      count = count + parseInt(results.getRows()[ii][1]);
+      Logger.log(results.getRows().length)
+    }
+    
+    sheetOut.getRange(startRow+i+1,1).setValue(dateAd);
+    sheetOut.getRange(startRow+i+1,2).setValue(hourAd + ':' + minuteAd);
+    sheetOut.getRange(startRow+i+1,3).setValue(count);
+
+/*  } else {
+    throw new Error('No ' + results);
+ */ }
+  
+//Logger.log(optArgs);
+
+}
+}
+
+//7 days ago
+function getReportDataForProfile7days() {
+
+ // var profileId = firstProfile.getId();
+ // var tableId = 'ga:' + profileId;
+  var tableId = 'ga:' + '32000361';
+  
+//  var sheet = SpreadsheetApp.getActiveSheet();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+  var sheetOut = SpreadsheetApp.getActiveSpreadsheet().getSheets()[1];
+  var startRow = 12822;  // First row of data to process
+  var trueRange = sheet.getRange(startRow,1,400,40);
+  var data = trueRange.getValues();
+  for (var i = 1; i < data.length; ++i) {
+    var row = data[i];
+    var date = new Date(row[7].match(/(.*)\.(.*)\.(.*)/)[3],row[7].match(/(.*)\.(.*)\.(.*)/)[2],row[7].match(/(.*)\.(.*)\.(.*)/)[1]);  //дата выхода
+    date.setDate(date.getDate() - 7);  //7 дней назад
+    
+    var dateAd = date.getFullYear() + '-' + ('0' + date.getMonth()).slice(-2) + '-' + ('0' + date.getDate()).slice(-2);
+
+
+    var timeAd = new Date(row[9]);  //время выхода
+    var hourAd = ('0' + row[9].match(/(.*):(.*):(.*)/)[1]).slice(-2);
+    
+    var minuteAd = ('0' + row[9].match(/(.*):(.*):(.*)/)[2]).slice(-2);
+    
+    if (hourAd == '24') hourAd = '00';
+    if (hourAd == '25') hourAd = '01';
+    if (hourAd == '26') hourAd = '02';
+ 
+    var timeAd = new Date(row[9]);  //время выхода
+ //   var hourAd = ('0' + timeAd.getHours()).slice(-2);
+ //   var minuteAd = ('0' + timeAd.getMinutes()).slice(-2);
+    
+    var durationAd = row[12];  //продолжительность выхода
+    var EqGRP = row[32];  //EqGRP
+    var count = 0;
+    
+//    var nameProduct = encodeURIComponent(row[7]);
+ Logger.log('date: ' + dateAd);
+ 
+  
+ 
+  var startDate = dateAd;   // 2 days (a fortnight) ago.
+  var endDate = dateAd;      // Today
+    
+  var minutes = ';ga:minute=='+minuteAd;  
+  
+  for (var iii = 1; iii < 10; ++iii) {
+   
+   var temp = parseInt(minuteAd)+iii;
+   minutes+=',ga:minute=='+temp;
+  }
+    
+   
+    
+  var optArgs = {
+    'dimensions': 'ga:source',              // Comma separated list of dimensions.
+    'sort': '-ga:sessions,ga:source',       // Sort by sessions descending, then keyword.
+    'filters': 'ga:medium==cpc;ga:hour==' + hourAd + minutes,          // Display only google traffic.
+    'start-index': '1',
+    'max-results':'13010'
+  };
+    
+  //  Logger.log(optArgs);
+
+  // Make a request to the API.
+  var results = Analytics.Data.Ga.get(
+      tableId,                    // Table id (format ga:xxxxxx).
+      startDate,                  // Start-date (format yyyy-MM-dd).
+      endDate,                    // End-date (format yyyy-MM-dd).
+      'ga:sessions', // Comma seperated list of metrics.
+      optArgs);
+
+    
+  if (results.getRows()) {
+    for (var ii = 0; ii < results.getRows().length; ii++) {
+      count = count + parseInt(results.getRows()[ii][1]);
+    }
+    
+
+    sheetOut.getRange(startRow+i+1,4).setValue(count);
+
+  }/* else {
+    throw new Error('No views (profiles) found'+results);
+  }
+*/
+}
+}
+
+
+function getLastNdays(nDaysAgo) {
+  var today = new Date();
+  var before = new Date();
+  before.setDate(today.getDate() - nDaysAgo);
+  return Utilities.formatDate(before, 'GMT', 'yyyy-MM-dd');
+}
+
+
+function outputToSpreadsheet(results) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[1];
+
+  // Print the headers.
+  var headerNames = [];
+  for (var i = 0, header; header = results.getColumnHeaders()[i]; ++i) {
+    headerNames.push(header.getName());
+  }
+//  sheet.getRange(1, 1, 1, headerNames.length)
+//      .setValues([headerNames]);
+
+  // Print the rows of data.
+  sheet.getRange(2, 1, results.getRows().length, headerNames.length)
+      .setValues(results.getRows());
+}
+
+
+
+
