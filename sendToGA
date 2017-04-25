@@ -1,4 +1,14 @@
 /*
+1. Исходный документ должен содержать столбцы:
+clientId
+IP
+Criteria ID
+Transactions Status
+revenue
+2. В исходном документе - открыть "Инструменты" > "Редактор скриптов",
+полностью вставить данный код.
+3. Запуск вручную - в редакторе скриптов - "Выполнить"  > "sendGAMP"
+4. Возможно задать выполнение по расписанию: "Правка" > "Триггеры текущего проекта" > создать и настроить расписание запуска.
 * sendGAMP - базовая функция передаци данных
 * * @param {string} tid Tracking ID / Web Property ID
 * * @param {Object} options Объект параметров транзакции с полями, поименованными в соответствии с столбцами таблицы
@@ -34,8 +44,8 @@ function sendGAMP(tid, options){
     var options = {'method' : 'POST',
                    'payload' : payload };
 
-    // UrlFetchApp.fetch('http://www.google-analytics.com/collect', options); for PROD
-    Logger.log(UrlFetchApp.getRequest('http://www.google-analytics.com/collect', options));
+    UrlFetchApp.fetch('http://www.google-analytics.com/collect', options);// for PROD
+    //Logger.log(UrlFetchApp.getRequest('http://www.google-analytics.com/collect', options));
     return true;
 }
 
@@ -57,7 +67,7 @@ function transactionsUpload() {
    ];
   var firstDataRowIndex = 3; // индекс первой строки данных
 
-  var tid = 'UA-107502-11'; //используется  DEV представление
+  var tid = 'UA-107502-7'; //используется  PROD  представление
   var fieldsIndexes = {};
   var rowIndexes = getColumnIndexes(SpreadsheetApp.getActiveSheet(), tableFields);
   for (var i = 0; i < rowIndexes.length; i++) {
